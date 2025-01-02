@@ -33,7 +33,7 @@
     <properties>
 
         <!-- Core properties -->
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project..sourceEncoding>UTF-8</project..sourceEncoding>
 
         <!-- Dependency versions -->
         <guava.version>32.1.3-jre</guava.version>
@@ -90,9 +90,32 @@
     </modules>
 
     <build>
-        <plugins>
-
-            <!-- Verify format using Apache RAT -->
+        <plugins>    
+            <!----++++++++++++++++++++++++++++++++++ -->
+                 <plugin>
+            <groupId>com.github.eirslett</groupId>
+            <artifactId>frontend-maven-plugin</artifactId>
+            <version>1.11.3</version>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>install-node-and-npm</goal>
+                        <goal>npm</goal>
+                    </goals>
+                    <configuration>
+                        <npmCommand>install</npmCommand>
+                    </configuration>
+                </execution>
+                <execution>
+                    <goals>
+                        <goal>npm</goal>
+                    </goals>
+                    <configuration>
+                        <npmCommand>run build</npmCommand>
+                    </configuration>
+                </execution>
+            </executions>
+        </plugin>               <!-- Verify format using Apache RAT =======++++++++++++-->
             <plugin>
                 <groupId>org.apache.rat</groupId>
                 <artifactId>apache-rat-plugin</artifactId>
