@@ -24,11 +24,11 @@
 # Use args for Tomcat image label to allow image builder to choose alternatives
 # such as `--build-arg TOMCAT_JRE=jre8-alpine`
 #
-ARG TOMCAT_VERSION=9
-ARG TOMCAT_JRE=jdk21
+ARG TOMCAT_VERSION=8.5
+ARG TOMCAT_JRE=jdk8
 
 # Use official maven image for the build
-FROM maven:3-eclipse-temurin-21 AS builder
+FROM maven:3-eclipse-temurin-8-focal AS builder
 
 # Use Mozilla's Firefox PPA (newer Ubuntu lacks a "firefox-esr" package and
 # provides only a transitional "firefox" package that actually requires Snap
@@ -61,24 +61,24 @@ ENV \
 
 # Add configuration scripts
 COPY guacamole-docker/bin/ /opt/guacamole/bin/
-COPY guacamole-docker/build.d/ /opt/guacamole/build.d/
-COPY guacamole-docker/entrypoint.d/ /opt/guacamole/entrypoint.d/
-COPY guacamole-docker/environment/ /opt/guacamole/environment/
-
+# Ensure the script has the right execute permissions
+RUN chmod +x /opt/guacamole/bin/build-guacamole.sh
+# Ensure the script has the right execute permissions
+RUN chmod +x /opt/guacamole/bin/initdb.sh
+# Ensure the script has the right execute permissions
+RUN chmod +x /opt/guacamole/bin/start.sh
 # Copy source to container for sake of build
 COPY . "$BUILD_DIR"
 
 # Run the build itself
 RUN /opt/guacamole/bin/build-guacamole.sh "$BUILD_DIR" /opt/guacamole
 
-RUN rm -rf /opt/guacamole/build.d /opt/guacamole/bin/build-guacamole.sh
-
 # For the runtime image, we start with the official Tomcat distribution
 FROM tomcat:${TOMCAT_VERSION}-${TOMCAT_JRE}
 
-# Install XMLStarlet for server.xml alterations
+# Install XMLStarlet for server.xml alterations and unzip for LOGBACK_LEVEL case
 RUN apt-get update -qq \
-    && apt-get install -y xmlstarlet \
+    && apt-get install -y xmlstarlet unzip\
     && rm -rf /var/lib/apt/lists/* 
 
 # This is where the build artifacts go in the runtime image
@@ -96,11 +96,6 @@ RUN useradd --system --create-home --shell /usr/sbin/nologin --uid $UID --gid $G
 # Run with user guacamole
 USER guacamole
 
-# Environment variable defaults
-ENV BAN_ENABLED=true \
-    ENABLE_FILE_ENVIRONMENT_PROPERTIES=true \
-    GUACAMOLE_HOME=/etc/guacamole
-
 # Start Guacamole under Tomcat, listening on 0.0.0.0:8080
 EXPOSE 8080
-CMD ["/opt/guacamole/bin/entrypoint.sh" ]
+CMD ["/opt/guacamole/bin/start.sh" ]
