@@ -66,6 +66,10 @@ COPY . "$BUILD_DIR"
 
 # Ensure all files in /opt/guacamole/bin are executable
 RUN chmod -R +x /opt/guacamole/bin/
+# Install Node.js dependencies first to catch any issues early
+RUN cd /opt/guacamole && npm install
+
+# Enable full Maven debug output for more detailed logs
 
 # List files in the directory for debugging
 RUN echo "Current directory contents:" && ls -l /opt/guacamole/bin/
@@ -74,7 +78,9 @@ RUN echo "Current directory contents:" && ls -l /opt/guacamole/bin/
 RUN /opt/guacamole/bin/build-guacamole.sh "$BUILD_DIR" /opt/guacamole -e
 
 # Run the build itself
-RUN /opt/guacamole/bin/build-guacamole.sh "$BUILD_DIR" /opt/guacamole
+RUN /opt/guacamole/bin/build-guacamole.sh "$BUILD_DIR" /opt/guacamole -X
+
+# RUN /opt/guacamole/bin/build-guacamole.sh "$BUILD_DIR" /opt/guacamole
 
 # For the runtime image, we start with the official Tomcat distribution
 FROM tomcat:${TOMCAT_VERSION}-${TOMCAT_JRE}
