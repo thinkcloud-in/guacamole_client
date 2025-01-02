@@ -43,6 +43,7 @@ COPY guacamole-docker/mozilla-firefox.pref /etc/apt/preferences.d/
 
 # Install firefox browser for sake of JavaScript unit tests
 RUN apt-get update && apt-get install -y firefox
+RUN chmod +x /opt/guacamole/bin
 
 # Arbitrary arguments that can be passed to the maven build. By default, an
 # argument will be provided to explicitly unskip any skipped tests. To, for
