@@ -64,7 +64,15 @@ COPY guacamole-docker/bin/ /opt/guacamole/bin/
 # Copy source to container for sake of build
 COPY . "$BUILD_DIR"
 
-RUN chmod +x /opt/guacamole/bin/*
+# Ensure all files in /opt/guacamole/bin are executable
+RUN chmod -R +x /opt/guacamole/bin/
+
+# List files in the directory for debugging
+RUN echo "Current directory contents:" && ls -l /opt/guacamole/bin/
+
+# Run the build script with extra logging (Maven in debug mode)
+RUN /opt/guacamole/bin/build-guacamole.sh "$BUILD_DIR" /opt/guacamole -e
+
 # Run the build itself
 RUN /opt/guacamole/bin/build-guacamole.sh "$BUILD_DIR" /opt/guacamole
 
