@@ -67,11 +67,20 @@ RUN chmod +x /opt/guacamole/bin/build-guacamole.sh
 RUN chmod +x /opt/guacamole/bin/initdb.sh
 # Ensure the script has the right execute permissions
 RUN chmod +x /opt/guacamole/bin/start.sh
+# Install Node.js dependencies first
+RUN cd /opt/guacamole && npm install
+
+# Run the frontend build step manually
+RUN cd /opt/guacamole && npm run build
+
+# Now run the full Guacamole build script with debugging
+RUN /opt/guacamole/bin/build-guacamole.sh "$BUILD_DIR" /opt/guacamole -X
+
 # Copy source to container for sake of build
 COPY . "$BUILD_DIR"
 
 # Run the build itself
-RUN /opt/guacamole/bin/build-guacamole.sh "$BUILD_DIR" /opt/guacamole
+# RUN /opt/guacamole/bin/build-guacamole.sh "$BUILD_DIR" /opt/guacamole
 
 # For the runtime image, we start with the official Tomcat distribution
 FROM tomcat:${TOMCAT_VERSION}-${TOMCAT_JRE}
