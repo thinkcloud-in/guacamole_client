@@ -68,10 +68,6 @@ RUN chmod +x /opt/guacamole/bin/initdb.sh
 # Ensure the script has the right execute permissions
 RUN chmod +x /opt/guacamole/bin/start.sh
 # Install Node.js dependencies first
-RUN cd /opt/guacamole && npm install
-
-# Run the frontend build step manually
-RUN cd /opt/guacamole && npm run build
 
 # Now run the full Guacamole build script with debugging
 RUN /opt/guacamole/bin/build-guacamole.sh "$BUILD_DIR" /opt/guacamole -X
