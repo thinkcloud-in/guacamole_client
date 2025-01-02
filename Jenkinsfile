@@ -30,7 +30,16 @@ pipeline {
     stages {
         stage('Git Checkout') {
             steps {
-                git credentialsId: 'rcv-git', url: 'git remote add origin https://github.com/thinkcloud-in/guacamole_client.git',branch: 'main'
+                script {
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: 'main']], // Adjust branch if necessary
+                        userRemoteConfigs: [[
+                            url: 'https://github.com/thinkcloud-in/guacamole_client.git',
+                            credentialsId: 'rcv-git'
+                        ]]
+                    ])
+                }
             }
         }
 
