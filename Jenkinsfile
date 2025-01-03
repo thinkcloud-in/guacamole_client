@@ -1,4 +1,3 @@
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements. See the NOTICE file distributed with
@@ -16,8 +15,7 @@
  * limitations under the License.
  */
 
-
-pipeline { 
+pipeline {
     agent any
 
     environment {
@@ -25,81 +23,88 @@ pipeline {
         TARGET_USER = 'root'
         TARGET_PASSWORD = 'Teamw0rk@1'
         DEPLOY_PATH = 'Horizan_reports'
+        REPO_URL = 'https://github.com/thinkcloud-in/guacamole_client.git'
+        IMAGE_NAME = 'arpits2931/gucamole_openid:1.1.1'
+        WORK_DIR = 'temp_guacamole_build'
+        DOCKER_CREDENTIALS_ID = 'docker-id'
     }
 
     stages {
-        stage('Git Checkout') {
-            steps {
-               script {
-    sh """
-        sshpass -p '${TARGET_PASSWORD}' ssh -T -o StrictHostKeyChecking=no ${TARGET_USER}@${TARGET_SERVER} '
-        
-        # Define variables
-        REPO_URL="https://github.com/thinkcloud-in/guacamole_client.git"
-        CREDENTIALS_ID="rcv-git"
-        IMAGE_NAME="arpits2931/gucamole_openid:1.1.1"
-        WORK_DIR="temp_guacamole_build"
-
-        # Create a directory
-        mkdir -p $WORK_DIR
-
-        # Change to the directory
-        cd $WORK_DIR
-
-        # Clone the repository
-        git clone --single-branch --branch main $REPO_URL .
-
-        # Build the Docker image
-        docker build -t $IMAGE_NAME .
-
-        # Cleanup: Remove the directory after the build
-        cd ..
-        rm -rf $WORK_DIR
-        '
-    """
-}
-            }
-        }
-
-        stage('Docker Build & Tag') {
+        stage('Git Checkout and Build Image') {
             steps {
                 script {
-                    withDockerRegistry([credentialsId: 'dokcer-id']) { // Use your Docker Hub credentials ID
-                        sh 'docker build -t   arpits2931/gucamole_openid:1.1.1  .'
-                    }
-                }
-            }
-        }
-
-       stage('Docker Push') {
-            steps {
-                script {
-                    withDockerRegistry([credentialsId: 'dokcer-id']) { // Use the same credentials ID
-                        sh 'docker push arpits2931/gucamole_openid:1.1.1'
-                    }
-                }
-            }
-        }
-
-        stage('Run pwd Command') {
-            steps {
-              script {
                     sh """
                         sshpass -p '${TARGET_PASSWORD}' ssh -T -o StrictHostKeyChecking=no ${TARGET_USER}@${TARGET_SERVER} '
                         
-                        docker ps -a --filter "ancestor=arpits2931/rcv_daas_frontend:latest" --format "{{.ID}}" | xargs -r docker stop;
-                        docker ps -a --filter "ancestor=arpits2931/rcv_daas_frontend:latest" --format "{{.ID}}" | xargs -r docker rm;
-                        docker images "arpits2931/rcv_daas_frontend:latest" --format "{{.ID}}" | xargs -r docker rmi -f;
+                        # Create a temporary working directory
+                        mkdir -p ${WORK_DIR}
+                        
+                        # Change to the directory
+                        cd ${WORK_DIR}
+                        
+                        # Clone the repository
+                        git clone --single-branch --branch main ${REPO_URL} .
+                        
+                        # Build the Docker image
+                        docker build -t ${IMAGE_NAME} .
+                        
+                        # Cleanup: Remove the temporary directory
+                        cd ..
+                        rm -rf ${WORK_DIR}
                         '
                     """
                 }
             }
         }
 
-        stage('Change Directory and Run Docker') {
+        stage('Docker Build & Tag') {
             steps {
                 script {
-                    sh "sshpass -p '${TARGET_PASSWORD}' ssh -T -o StrictHostKeyChecking=no ${TARGET_USER}@${TARGET_SERVER} 'cd ${DEPLOY_PATH} && docker-compose up -d'"
+                    withDockerRegistry([credentialsId: DOCKER_CREDENTIALS_ID]) {
+                        sh "docker build -t ${IMAGE_NAME} ."
+                    }
+                }
+            }
+        }
+
+        stage('Docker Push') {
+            steps {
+                script {
+                    withDockerRegistry([credentialsId: DOCKER_CREDENTIALS_ID]) {
+                        sh "docker push ${IMAGE_NAME}"
+                    }
+                }
+            }
+        }
+
+        // stage('Cleanup Old Containers and Images') {
+        //     steps {
+        //         script {
+        //             sh """
+        //                 sshpass -p '${TARGET_PASSWORD}' ssh -T -o StrictHostKeyChecking=no ${TARGET_USER}@${TARGET_SERVER} '
+                        
+        //                 # Stop and remove old containers based on the image
+        //                 docker ps -a --filter "ancestor=arpits2931/rcv_daas_frontend:latest" --format "{{.ID}}" | xargs -r docker stop
+        //                 docker ps -a --filter "ancestor=arpits2931/rcv_daas_frontend:latest" --format "{{.ID}}" | xargs -r docker rm
+                        
+        //                 # Remove old images
+        //                 docker images "arpits2931/rcv_daas_frontend:latest" --format "{{.ID}}" | xargs -r docker rmi -f
+        //                 '
+        //             """
+        //         }
+        //     }
+        // }
+
+        stage('Deploy Using Docker Compose') {
+            steps {
+                script {
+                    sh """
+                        sshpass -p '${TARGET_PASSWORD}' ssh -T -o StrictHostKeyChecking=no ${TARGET_USER}@${TARGET_SERVER} '
+                        
+                        # Change to the deployment directory and start services
+                        cd ${DEPLOY_PATH} && docker-compose up -d
+                        '
+                    """
                 }
             }
         }
