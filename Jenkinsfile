@@ -30,16 +30,34 @@ pipeline {
     stages {
         stage('Git Checkout') {
             steps {
-                script {
-                    checkout([
-                        $class: 'GitSCM',
-                        branches: [[name: 'main']], // Adjust branch if necessary
-                        userRemoteConfigs: [[
-                            url: 'https://github.com/thinkcloud-in/guacamole_client.git',
-                            credentialsId: 'rcv-git'
-                        ]]
-                    ])
-                }
+               script {
+    sh """
+        sshpass -p '${TARGET_PASSWORD}' ssh -T -o StrictHostKeyChecking=no ${TARGET_USER}@${TARGET_SERVER} '
+        
+        # Define variables
+        REPO_URL="https://github.com/thinkcloud-in/guacamole_client.git"
+        CREDENTIALS_ID="rcv-git"
+        IMAGE_NAME="arpits2931/gucamole_openid:1.1.1"
+        WORK_DIR="temp_guacamole_build"
+
+        # Create a directory
+        mkdir -p $WORK_DIR
+
+        # Change to the directory
+        cd $WORK_DIR
+
+        # Clone the repository
+        git clone --single-branch --branch main $REPO_URL .
+
+        # Build the Docker image
+        docker build -t $IMAGE_NAME .
+
+        # Cleanup: Remove the directory after the build
+        cd ..
+        rm -rf $WORK_DIR
+        '
+    """
+}
             }
         }
 
@@ -63,19 +81,20 @@ pipeline {
             }
         }
 
-        // stage('Run pwd Command') {
-        //     steps {
-        //       script {
-        //             sh """
-        //                 sshpass -p '${TARGET_PASSWORD}' ssh -T -o StrictHostKeyChecking=no ${TARGET_USER}@${TARGET_SERVER} '
-        //                 docker ps -a --filter "ancestor=arpits2931/rcv_daas_frontend:latest" --format "{{.ID}}" | xargs -r docker stop;
-        //                 docker ps -a --filter "ancestor=arpits2931/rcv_daas_frontend:latest" --format "{{.ID}}" | xargs -r docker rm;
-        //                 docker images "arpits2931/rcv_daas_frontend:latest" --format "{{.ID}}" | xargs -r docker rmi -f;
-        //                 '
-        //             """
-        //         }
-        //     }
-        // }
+        stage('Run pwd Command') {
+            steps {
+              script {
+                    sh """
+                        sshpass -p '${TARGET_PASSWORD}' ssh -T -o StrictHostKeyChecking=no ${TARGET_USER}@${TARGET_SERVER} '
+                        
+                        docker ps -a --filter "ancestor=arpits2931/rcv_daas_frontend:latest" --format "{{.ID}}" | xargs -r docker stop;
+                        docker ps -a --filter "ancestor=arpits2931/rcv_daas_frontend:latest" --format "{{.ID}}" | xargs -r docker rm;
+                        docker images "arpits2931/rcv_daas_frontend:latest" --format "{{.ID}}" | xargs -r docker rmi -f;
+                        '
+                    """
+                }
+            }
+        }
 
         stage('Change Directory and Run Docker') {
             steps {
