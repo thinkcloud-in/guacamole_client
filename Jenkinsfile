@@ -32,34 +32,35 @@ pipeline {
     stages {
         stage('Git Checkout and Build Image') {
             steps {
-                script {
-                    sh """
-                        sshpass -p '${TARGET_PASSWORD}' ssh -T -o StrictHostKeyChecking=no ${TARGET_USER}@${TARGET_SERVER} '
-                        
-                        # Ensure a fresh temporary working directory
-                        if [ -d "${WORK_DIR}" ]; then
-                            rm -rf ${WORK_DIR}
-                        fi
-                        mkdir -p ${WORK_DIR}
-                        
-                        # Change to the directory
-                        cd ${WORK_DIR}
-                        
-                        # Clone the repository
-                        git clone --single-branch --branch main ${REPO_URL} .
-                        
-                        # Navigate into the repository
-                        cd guacamole_client
-                        
-                        # Build the Docker image
-                        docker build -t ${IMAGE_NAME} .
-                        
-                        # Cleanup: Remove the temporary directory
-                        cd ../..
-                        rm -rf ${WORK_DIR}
-                        '
-                    """
-                }
+               script {
+            sh """
+                sshpass -p '${TARGET_PASSWORD}' ssh -T -o StrictHostKeyChecking=no ${TARGET_USER}@${TARGET_SERVER} '
+                
+                # Ensure a fresh temporary working directory
+                if [ -d "${WORK_DIR}" ]; then
+                    rm -rf ${WORK_DIR}
+                fi
+                mkdir -p ${WORK_DIR}
+                
+                # Change to the directory
+                cd ${WORK_DIR}
+                
+                # Clone the repository into a specific folder
+                git clone --single-branch --branch main ${REPO_URL} guacamole_client
+                
+                # Navigate into the cloned repository
+                cd guacamole_client
+                
+                # Build the Docker image
+                docker build -t ${IMAGE_NAME} .
+                
+                # Cleanup: Remove the temporary directory
+                cd ../..
+                rm -rf ${WORK_DIR}
+                '
+            """
+        }
+
             }
         }
 
