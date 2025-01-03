@@ -36,20 +36,23 @@ pipeline {
                     sh """
                         sshpass -p '${TARGET_PASSWORD}' ssh -T -o StrictHostKeyChecking=no ${TARGET_USER}@${TARGET_SERVER} '
                         
-                        # Create a temporary working directory
+                       # Create a temporary working directory
                         mkdir -p ${WORK_DIR}
                         
                         # Change to the directory
                         cd ${WORK_DIR}
-                       
+                        
                         # Clone the repository
                         git clone --single-branch --branch main ${REPO_URL} .
+                        
+                        # Navigate into the repository
                         cd guacamole_client
+                        
                         # Build the Docker image
                         docker build -t ${IMAGE_NAME} .
                         
                         # Cleanup: Remove the temporary directory
-                        cd ..
+                        cd ../..
                         rm -rf ${WORK_DIR}
                         '
                     """
