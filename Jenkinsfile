@@ -36,7 +36,10 @@ pipeline {
                     sh """
                         sshpass -p '${TARGET_PASSWORD}' ssh -T -o StrictHostKeyChecking=no ${TARGET_USER}@${TARGET_SERVER} '
                         
-                       # Create a temporary working directory
+                        # Ensure a fresh temporary working directory
+                        if [ -d "${WORK_DIR}" ]; then
+                            rm -rf ${WORK_DIR}
+                        fi
                         mkdir -p ${WORK_DIR}
                         
                         # Change to the directory
