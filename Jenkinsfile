@@ -41,7 +41,7 @@ pipeline {
                         
                         # Change to the directory
                         cd ${WORK_DIR}
-                        
+                        cd guacamole_client
                         # Clone the repository
                         git clone --single-branch --branch main ${REPO_URL} .
                         
